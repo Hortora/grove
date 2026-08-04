@@ -110,17 +110,21 @@ public class QdrantGardenClient {
     }
 
     public List<DomainStats> computeDomainStats(List<GardenEntry> entries) {
+        return computeDomainStats(entries, Map.of());
+    }
+
+    public List<DomainStats> computeDomainStats(List<GardenEntry> entries, Map<String, Integer> retrievalCounts) {
         Map<String, List<GardenEntry>> byDomain = entries.stream()
                 .filter(e -> e.domain() != null)
                 .collect(Collectors.groupingBy(GardenEntry::domain, LinkedHashMap::new, Collectors.toList()));
 
         return byDomain.entrySet().stream()
-                .map(e -> buildDomainStats(e.getKey(), e.getValue()))
+                .map(e -> buildDomainStats(e.getKey(), e.getValue(), retrievalCounts))
                 .sorted((a, b) -> Integer.compare(b.entryCount(), a.entryCount()))
                 .toList();
     }
 
-    private DomainStats buildDomainStats(String domain, List<GardenEntry> entries) {
+    private DomainStats buildDomainStats(String domain, List<GardenEntry> entries, Map<String, Integer> retrievalCounts) {
         Map<String, Integer> typeBreakdown = entries.stream()
                 .filter(e -> e.type() != null)
                 .collect(Collectors.groupingBy(GardenEntry::type, Collectors.summingInt(e -> 1)));
@@ -130,17 +134,22 @@ public class QdrantGardenClient {
                 .average()
                 .orElse(0);
 
-        return new DomainStats(domain, entries.size(), typeBreakdown, avgScore, 0, 0);
+        int retrieved = (int) entries.stream()
+                .filter(e -> e.sourceDocumentId() != null && retrievalCounts.containsKey(e.sourceDocumentId()))
+                .count();
+        int neverRetrieved = entries.size() - retrieved;
+
+        return new DomainStats(domain, entries.size(), typeBreakdown, avgScore, retrieved, neverRetrieved);
     }
 
     public GardenOverview computeOverview(List<GardenEntry> entries, List<DomainStats> domainStats) {
-        int untaggedCount = 0;
+        int neverRetrieved = domainStats.stream().mapToInt(DomainStats::neverRetrievedCount).sum();
         return new GardenOverview(
                 entries.size(),
                 domainStats.size(),
                 0,
-                untaggedCount,
-                0);
+                0,
+                neverRetrieved);
     }
 
     public List<DomainStats> getDomainStats() {
