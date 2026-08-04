@@ -14,6 +14,9 @@ public interface GroveConfig {
 
     GardenDb gardenDb();
 
+    Engine engine();
+
+
     interface Qdrant {
         @WithDefault("localhost")
         String host();
@@ -35,5 +38,10 @@ public interface GroveConfig {
 
     interface GardenDb {
         String path();
+    }
+
+    interface Engine {
+        @WithDefault("http://localhost:8080")
+        String url();
     }
 }

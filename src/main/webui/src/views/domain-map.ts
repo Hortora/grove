@@ -47,12 +47,53 @@ export class DomainMap extends LitElement {
       background: #2a1a1a;
       border-radius: 8px;
     }
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .reindex-btn {
+      background: #2a2a2a;
+      border: 1px solid #3a3a3a;
+      border-radius: 6px;
+      color: #e0e0e0;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: border-color 0.2s;
+    }
+    .reindex-btn:hover:not(:disabled) {
+      border-color: #7cb3f5;
+    }
+    .reindex-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .reindex-result {
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      align-self: center;
+    }
+    .reindex-result.ok {
+      color: #7cb3f5;
+      background: #1a2a3a;
+    }
+    .reindex-result.error {
+      color: #e06c60;
+      background: #2a1a1a;
+    }
   `;
 
   @state() private domains: any[] = [];
   @state() private overview: any = null;
   @state() private loading = true;
   @state() private error = '';
+  @state() private reindexing = false;
+  @state() private reindexResult: { status: string; message: string } | null = null;
 
   connectedCallback() {
     super.connectedCallback();
@@ -72,6 +113,22 @@ export class DomainMap extends LitElement {
       this.error = `Failed to load garden data: ${e}`;
     } finally {
       this.loading = false;
+    }
+  }
+
+  private async triggerReindex() {
+    this.reindexing = true;
+    this.reindexResult = null;
+    try {
+      const res = await fetch('/api/reindex', { method: 'POST' });
+      this.reindexResult = await res.json();
+      if (this.reindexResult?.status === 'ok') {
+        await this.loadData();
+      }
+    } catch (e) {
+      this.reindexResult = { status: 'error', message: `Request failed: ${e}` };
+    } finally {
+      this.reindexing = false;
     }
   }
 
@@ -98,6 +155,16 @@ export class DomainMap extends LitElement {
           <div class="metric-value">${o.neverRetrievedCount}</div>
           <div class="metric-label">Never retrieved</div>
         </div>
+      </div>
+      <div class="actions">
+        <button class="reindex-btn" @click=${this.triggerReindex} ?disabled=${this.reindexing}>
+          ${this.reindexing ? 'Reindexing...' : 'Trigger Reindex'}
+        </button>
+        ${this.reindexResult ? html`
+          <span class="reindex-result ${this.reindexResult.status === 'ok' ? 'ok' : 'error'}">
+            ${this.reindexResult.message}
+          </span>
+        ` : ''}
       </div>
       <div class="grid">
         ${this.domains.map(d => html`
