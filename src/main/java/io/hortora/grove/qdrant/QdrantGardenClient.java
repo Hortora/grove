@@ -1,5 +1,12 @@
 package io.hortora.grove.qdrant;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.hortora.grove.config.GroveConfig;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -9,14 +16,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import io.hortora.grove.config.GroveConfig;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class QdrantGardenClient {
@@ -81,6 +80,69 @@ public class QdrantGardenClient {
 
         return entries;
     }
+
+    public List<VectorEntry> fetchEntriesWithVectors(String domain) {
+        var    entries = new ArrayList<VectorEntry>();
+        String offset  = null;
+
+        try {
+            while (true) {
+                ObjectNode body = mapper.createObjectNode();
+                body.put("limit", 100);
+                body.putArray("with_vector").add("dense");
+                body.putObject("with_payload")
+                    .putArray("include")
+                    .add("title").add("type").add("domain")
+                    .add("score").add("sourceDocumentId");
+
+                ObjectNode filter = body.putObject("filter");
+                ObjectNode must   = filter.putArray("must").addObject();
+                must.put("key", "domain");
+                must.putObject("match").put("value", domain);
+
+                if (offset != null) {
+                    body.put("offset", offset);
+                }
+
+                HttpRequest request = HttpRequest.newBuilder()
+                                                 .uri(URI.create(baseUrl + "/collections/" + collection + "/points/scroll"))
+                                                 .header("Content-Type", "application/json")
+                                                 .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(body)))
+                                                 .build();
+
+                HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                JsonNode             result   = mapper.readTree(response.body()).get("result");
+                JsonNode             points   = result.get("points");
+
+                for (JsonNode point : points) {
+                    JsonNode payload    = point.get("payload");
+                    JsonNode vectorNode = point.path("vector").path("dense");
+                    if (!vectorNode.isArray()) {continue;}
+
+                    float[] vector = new float[vectorNode.size()];
+                    for (int i = 0; i < vectorNode.size(); i++) {
+                        vector[i] = (float) vectorNode.get(i).asDouble();
+                    }
+
+                    entries.add(new VectorEntry(
+                            point.get("id").asText(),
+                            textOrNull(payload, "title"),
+                            textOrNull(payload, "sourceDocumentId"),
+                            vector
+                    ));
+                }
+
+                JsonNode nextOffset = result.get("next_page_offset");
+                if (nextOffset == null || nextOffset.isNull()) {break;}
+                offset = nextOffset.asText();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch vectors from Qdrant for domain " + domain, e);
+        }
+
+        return entries;
+    }
+
 
     private GardenEntry parseEntry(JsonNode point) {
         JsonNode payload = point.get("payload");

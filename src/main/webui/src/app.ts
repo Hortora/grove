@@ -3,6 +3,7 @@ import { customElement, state } from 'lit/decorators.js';
 import './views/domain-map';
 import './views/domain-detail';
 import './views/entry-detail';
+import './views/duplicate-review';
 
 @customElement('grove-app')
 class GroveApp extends LitElement {
@@ -52,7 +53,10 @@ class GroveApp extends LitElement {
 
   private updateRoute() {
     const hash = location.hash.replace('#', '') || 'home';
-    if (hash.startsWith('domain/')) {
+    if (hash.startsWith('duplicates/')) {
+      this.route = 'duplicates';
+      this.routeParam = hash.substring(11);
+    } else if (hash.startsWith('domain/')) {
       this.route = 'domain';
       this.routeParam = hash.substring(7);
     } else if (hash.startsWith('entry/')) {
@@ -86,6 +90,8 @@ class GroveApp extends LitElement {
         return html`<grove-domain-detail .domain=${this.routeParam}></grove-domain-detail>`;
       case 'entry':
         return html`<grove-entry-detail .geId=${this.routeParam}></grove-entry-detail>`;
+      case 'duplicates':
+        return html`<grove-duplicate-review .domain=${this.routeParam}></grove-duplicate-review>`;
       default:
         return html`<p>Unknown route: ${this.route}</p>`;
     }
