@@ -22,6 +22,8 @@ public class AnalysisResource {
     DuplicateDetector duplicateDetector;
     @Inject
     io.hortora.grove.analysis.CentroidAnalyser centroidAnalyser;
+    @Inject
+    io.hortora.grove.analysis.CoverageDensityAnalyser coverageAnalyser;
 
 
     @POST
@@ -63,6 +65,17 @@ public class AnalysisResource {
         try {
             var candidates = centroidAnalyser.findCrossDomainCandidates();
             return Map.of("count", candidates.size(), "candidates", candidates);
+        } catch (Exception e) {
+            throw new WebApplicationException(e.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GET
+    @Path("/coverage/{domain}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public io.hortora.grove.analysis.CoverageResult getCoverageDensity(@PathParam("domain") String domain) {
+        try {
+            return coverageAnalyser.analyse(domain);
         } catch (Exception e) {
             throw new WebApplicationException(e.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
         }
