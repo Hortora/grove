@@ -6,7 +6,7 @@
 > (test-driven-development) and uses ide-tooling for structural
 > editing. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Focal issue:** TBD (to be filed on hortora/grove)
+**Focal issue:** #1 (epic — Hortora/grove)
 **Spec:** `docs/specs/2026-08-04-grove-garden-analytics-design.md`
 
 **Goal:** Get Grove running as a standalone Quarkus app with a domain map landing page, entry detail view, and basic curation actions (edit, retire, confirm freshness).

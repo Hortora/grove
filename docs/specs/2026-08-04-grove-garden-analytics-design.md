@@ -1,7 +1,7 @@
 # Grove — Garden Analytics and Curation Dashboard
 
 **Date:** 2026-08-04
-**Issue:** TBD (to be filed)
+**Issue:** #1 (epic — Hortora/grove)
 **Status:** Design approved
 
 ---
