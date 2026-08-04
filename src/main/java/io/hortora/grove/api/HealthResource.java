@@ -1,15 +1,19 @@
 package io.hortora.grove.api;
 
 import io.hortora.grove.health.IndexReconciler;
+import io.hortora.grove.health.ReconcileReport;
 import io.hortora.grove.health.ReindexResult;
 import io.hortora.grove.health.ReindexService;
-import io.hortora.grove.health.ReconcileReport;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
 import java.util.Map;
 
@@ -20,6 +24,8 @@ public class HealthResource {
     IndexReconciler reconciler;
     @Inject
     ReindexService reindexService;
+    @Inject
+    io.hortora.grove.version.VersionRegistry versionRegistry;
 
 
     @GET
@@ -41,5 +47,27 @@ public class HealthResource {
     @Produces(MediaType.APPLICATION_JSON)
     public ReindexResult reindex() {
         return reindexService.triggerReindex();
+    }
+
+    @GET
+    @Path("/versions")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, String> getVersions() {
+        return versionRegistry.getVersions();
+    }
+
+    @PUT
+    @Path("/versions")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, String> updateVersions(Map<String, String> versions) {
+        try {
+            for (var entry : versions.entrySet()) {
+                versionRegistry.setVersion(entry.getKey(), entry.getValue());
+            }
+            return versionRegistry.getVersions();
+        } catch (Exception e) {
+            throw new WebApplicationException(e.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+        }
     }
 }

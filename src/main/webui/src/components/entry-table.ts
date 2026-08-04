@@ -74,6 +74,10 @@ export class EntryTable extends LitElement {
     .staleness-aging { color: #d4a843; }
     .staleness-stale { color: #e06c60; }
     .staleness-unknown { color: #666; }
+    .version-current { color: #6abf69; }
+    .version-aging { color: #d4a843; }
+    .version-legacy { color: #e06c60; }
+    .version-unknown { color: #666; }
     .score { font-weight: 600; }
     .score-low { color: #e06c60; }
     .empty { color: #666; padding: 40px; text-align: center; }
@@ -143,6 +147,7 @@ export class EntryTable extends LitElement {
         case 'submitted': cmp = (a.submitted ?? '').localeCompare(b.submitted ?? ''); break;
         case 'staleness': cmp = (a.stalenessStatus ?? '').localeCompare(b.stalenessStatus ?? ''); break;
         case 'type': cmp = (a.type ?? '').localeCompare(b.type ?? ''); break;
+        case 'versionStatus': cmp = (a.versionStatus ?? '').localeCompare(b.versionStatus ?? ''); break;
       }
       return this.sortAsc ? cmp : -cmp;
     });
@@ -208,6 +213,7 @@ export class EntryTable extends LitElement {
               ${this.headerCell('score', 'Score')}
               ${this.headerCell('submitted', 'Submitted')}
               ${this.headerCell('staleness', 'Staleness')}
+              ${this.headerCell('versionStatus', 'Version')}
             </tr>
           </thead>
           <tbody>
@@ -220,6 +226,7 @@ export class EntryTable extends LitElement {
                 <td><span class="score ${e.score < 9 ? 'score-low' : ''}">${e.score?.toFixed(0)}</span></td>
                 <td>${e.submitted ?? '—'}</td>
                 <td><span class="staleness-${e.stalenessStatus ?? 'unknown'}">${e.stalenessStatus ?? 'unknown'}</span></td>
+                <td><span class="version-${e.versionStatus ?? 'unknown'}">${e.versionStatus ?? '—'}</span></td>
               </tr>
             `)}
           </tbody>

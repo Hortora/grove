@@ -316,7 +316,7 @@ export class EntryDetail extends LitElement {
         <span class="badge badge-score">score: ${e.score}</span>
         <span class="badge badge-staleness-${e.stalenessStatus}">${e.stalenessStatus}</span>
         ${e.verified ? html`<span class="badge badge-verified">verified</span>` : ''}
-        ${e.verifiedOn ? html`<span class="badge badge-staleness-current">${e.verifiedOn}</span>` : ''}
+        ${e.verifiedOn ? html`<span class="badge badge-staleness-${e.versionStatus === 'current' ? 'current' : e.versionStatus === 'aging' ? 'aging' : e.versionStatus === 'legacy' ? 'stale' : 'unknown'}">v:${e.versionStatus} (${e.verifiedOn})</span>` : ''}
       </div>
       <div class="layout">
         <div>

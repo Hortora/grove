@@ -1,14 +1,5 @@
 package io.hortora.grove.api;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-
 import io.hortora.grove.config.GroveConfig;
 import io.hortora.grove.qdrant.EntryDetail;
 import io.hortora.grove.qdrant.FrontmatterParser;
@@ -22,6 +13,15 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
 @jakarta.ws.rs.Path("/api")
 public class EntryResource {
 
@@ -30,6 +30,9 @@ public class EntryResource {
 
     @Inject
     GroveConfig config;
+    @Inject
+    io.hortora.grove.version.VersionRegistry versionRegistry;
+
 
     @GET
     @jakarta.ws.rs.Path("/entries/{geId}")
@@ -111,13 +114,16 @@ public class EntryResource {
         String fmSubmitted = stringOrNull(frontmatter, "submitted");
         String stalenessStatus = computeStalenessStatus(fmSubmitted != null ? fmSubmitted : entry.submitted(), lastReviewed, stalenessThreshold);
 
+        String versionStatus = io.hortora.grove.version.VersionScorer.score(
+                verifiedOn, versionRegistry.getVersions()).name().toLowerCase();
+
         return new EntryDetail(
                 entry.id(), entry.title(), entry.type(), entry.domain(),
                 entry.score(), entry.submitted(), entry.sourceDocumentId(),
                 fileContent != null ? fileContent : entry.content(),
                 tags, stalenessThreshold, lastReviewed, author, verifiedOn,
                 verified, constraints, invalidationTriggers,
-                stalenessStatus, frontmatter);
+                stalenessStatus, versionStatus, frontmatter);
     }
 
     static String computeStalenessStatus(String submitted, String lastReviewed, Integer thresholdDays) {

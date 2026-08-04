@@ -22,5 +22,6 @@ public record EntryDetail(
         String constraints,
         String invalidationTriggers,
         String stalenessStatus,
+        String versionStatus,
         Map<String, Object> allFrontmatter) {
 }
