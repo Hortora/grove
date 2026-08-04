@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
+import './views/domain-map';
 
 @customElement('grove-app')
 class GroveApp extends LitElement {
@@ -26,6 +27,7 @@ class GroveApp extends LitElement {
       font-weight: 600;
       color: #e0e0e0;
     }
+    h1 a { color: inherit; text-decoration: none; }
     .subtitle {
       color: #888;
       font-size: 14px;
@@ -35,17 +37,10 @@ class GroveApp extends LitElement {
       padding: 24px;
       overflow-y: auto;
     }
-    nav a {
-      color: #7cb3f5;
-      text-decoration: none;
-      margin-right: 16px;
-      font-size: 14px;
-    }
-    nav a:hover { text-decoration: underline; }
-    nav a.active { color: #e0e0e0; font-weight: 600; }
   `;
 
   @state() private route = '';
+  @state() private routeParam = '';
 
   connectedCallback() {
     super.connectedCallback();
@@ -54,15 +49,25 @@ class GroveApp extends LitElement {
   }
 
   private updateRoute() {
-    this.route = location.hash.replace('#', '') || 'home';
+    const hash = location.hash.replace('#', '') || 'home';
+    if (hash.startsWith('domain/')) {
+      this.route = 'domain';
+      this.routeParam = hash.substring(7);
+    } else if (hash.startsWith('entry/')) {
+      this.route = 'entry';
+      this.routeParam = hash.substring(6);
+    } else {
+      this.route = 'home';
+      this.routeParam = '';
+    }
   }
 
   render() {
     return html`
       <div class="shell">
         <header>
-          <h1>Grove</h1>
-          <span class="subtitle">Garden Analytics & Curation</span>
+          <h1><a href="#">Grove</a></h1>
+          <span class="subtitle">Garden Analytics &amp; Curation</span>
         </header>
         <main>
           ${this.renderView()}
@@ -72,19 +77,16 @@ class GroveApp extends LitElement {
   }
 
   private renderView() {
-    const route = this.route;
-    if (route === 'home' || route === '') {
-      return html`<p>Domain map — coming soon</p>`;
+    switch (this.route) {
+      case 'home':
+        return html`<grove-domain-map></grove-domain-map>`;
+      case 'domain':
+        return html`<p>Domain detail: ${this.routeParam} — coming in Task 6</p>`;
+      case 'entry':
+        return html`<p>Entry detail: ${this.routeParam} — coming in Task 7</p>`;
+      default:
+        return html`<p>Unknown route: ${this.route}</p>`;
     }
-    if (route.startsWith('domain/')) {
-      const domain = route.substring(7);
-      return html`<p>Domain detail: ${domain} — coming soon</p>`;
-    }
-    if (route.startsWith('entry/')) {
-      const geId = route.substring(6);
-      return html`<p>Entry detail: ${geId} — coming soon</p>`;
-    }
-    return html`<p>Unknown route: ${route}</p>`;
   }
 }
 
