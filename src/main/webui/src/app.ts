@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import './views/domain-map';
+import './views/domain-detail';
 
 @customElement('grove-app')
 class GroveApp extends LitElement {
@@ -81,7 +82,7 @@ class GroveApp extends LitElement {
       case 'home':
         return html`<grove-domain-map></grove-domain-map>`;
       case 'domain':
-        return html`<p>Domain detail: ${this.routeParam} — coming in Task 6</p>`;
+        return html`<grove-domain-detail .domain=${this.routeParam}></grove-domain-detail>`;
       case 'entry':
         return html`<p>Entry detail: ${this.routeParam} — coming in Task 7</p>`;
       default:
