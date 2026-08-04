@@ -30,8 +30,8 @@ Reads from Qdrant (vectors + content + metadata), SQLite databases (retrieval tr
 | Garden index | `~/.hortora/garden/garden.db` | SQLite read-only (entries, checked_pairs) |
 | Garden entries | `~/.hortora/garden/` | Filesystem read (frontmatter), JGit write (mutations) |
 | Version registry | `~/.hortora/garden/version-registry.yml` | YAML read/write (stack versions) |
-| Grove analysis cache | `~/.hortora/grove.db` | SQLite read/write (duplicate pairs, analysis results) |
-| Engine API | `localhost:8080` | REST (reindex trigger — requires engine#79) |
+| Grove analysis cache | `~/.hortora/grove.db` | SQLite read/write (analysis_cache table — all vector quality results) |
+| Engine API | `localhost:8080` | REST (reindex trigger) |
 
 ## Build
 

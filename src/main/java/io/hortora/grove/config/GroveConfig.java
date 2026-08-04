@@ -44,4 +44,12 @@ public interface GroveConfig {
         @WithDefault("http://localhost:8080")
         String url();
     }
+
+    interface AnalysisCache {
+        @WithDefault("${user.home}/.hortora/grove.db")
+        String path();
+    }
+
+    AnalysisCache analysisCache();
+
 }
