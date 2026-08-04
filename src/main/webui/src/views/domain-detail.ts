@@ -235,7 +235,9 @@ export class DomainDetail extends LitElement {
       <a class="back" href="#">&larr; Back to domain map</a>
       <div class="header">
         <h2>${this.domain}</h2>
-        <a class="back" href="#duplicates/${this.domain}" style="margin-left: auto;">Detect Duplicates &rarr;</a>
+        <a class="back" href="#duplicates/${this.domain}" style="margin-left: auto;">Duplicates &rarr;</a>
+        <a class="back" href="#outliers/${this.domain}">Outliers &rarr;</a>
+        <a class="back" href="#cross-domain">Cross-Domain &rarr;</a>
       </div>
       <div class="summary">
         <div>${this.entries.length} entries</div>

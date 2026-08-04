@@ -4,6 +4,8 @@ import './views/domain-map';
 import './views/domain-detail';
 import './views/entry-detail';
 import './views/duplicate-review';
+import './views/outlier-review';
+import './views/cross-domain-review';
 
 @customElement('grove-app')
 class GroveApp extends LitElement {
@@ -56,6 +58,12 @@ class GroveApp extends LitElement {
     if (hash.startsWith('duplicates/')) {
       this.route = 'duplicates';
       this.routeParam = hash.substring(11);
+    } else if (hash.startsWith('outliers/')) {
+      this.route = 'outliers';
+      this.routeParam = hash.substring(9);
+    } else if (hash === 'cross-domain') {
+      this.route = 'cross-domain';
+      this.routeParam = '';
     } else if (hash.startsWith('domain/')) {
       this.route = 'domain';
       this.routeParam = hash.substring(7);
@@ -92,6 +100,10 @@ class GroveApp extends LitElement {
         return html`<grove-entry-detail .geId=${this.routeParam}></grove-entry-detail>`;
       case 'duplicates':
         return html`<grove-duplicate-review .domain=${this.routeParam}></grove-duplicate-review>`;
+      case 'outliers':
+        return html`<grove-outlier-review .domain=${this.routeParam}></grove-outlier-review>`;
+      case 'cross-domain':
+        return html`<grove-cross-domain-review></grove-cross-domain-review>`;
       default:
         return html`<p>Unknown route: ${this.route}</p>`;
     }
