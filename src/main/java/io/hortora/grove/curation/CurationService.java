@@ -27,7 +27,7 @@ public class CurationService {
     }
 
     public void confirmFreshness(String sourceDocumentId) throws IOException, GitAPIException {
-        Path filePath = gardenPath.resolve(sourceDocumentId);
+        Path filePath = validatePath(sourceDocumentId);
         if (!Files.exists(filePath)) {
             throw new IOException("Garden entry not found: " + sourceDocumentId);
         }
@@ -54,7 +54,7 @@ public class CurationService {
     }
 
     public void retire(String sourceDocumentId, String reason) throws IOException, GitAPIException {
-        Path filePath = gardenPath.resolve(sourceDocumentId);
+        Path filePath = validatePath(sourceDocumentId);
         if (!Files.exists(filePath)) {
             throw new IOException("Garden entry not found: " + sourceDocumentId);
         }
@@ -77,7 +77,7 @@ public class CurationService {
     }
 
     public void editEntry(String sourceDocumentId, String updatedContent) throws IOException, GitAPIException {
-        Path filePath = gardenPath.resolve(sourceDocumentId);
+        Path filePath = validatePath(sourceDocumentId);
         if (!Files.exists(filePath)) {
             throw new IOException("Garden entry not found: " + sourceDocumentId);
         }
@@ -86,6 +86,14 @@ public class CurationService {
 
         String geId = extractGeId(sourceDocumentId);
         commitChange(sourceDocumentId, "grove: edit " + geId);
+    }
+
+    private Path validatePath(String sourceDocumentId) throws IOException {
+        Path resolved = gardenPath.resolve(sourceDocumentId).normalize();
+        if (!resolved.startsWith(gardenPath)) {
+            throw new IOException("Path traversal rejected: " + sourceDocumentId);
+        }
+        return resolved;
     }
 
     private void commitChange(String relativePath, String message) throws IOException, GitAPIException {
