@@ -25,11 +25,13 @@ Reads from Qdrant (vectors + content + metadata), SQLite databases (retrieval tr
 
 | Source | Path | Access |
 |--------|------|--------|
-| Qdrant collection | `localhost:6333/collections/hortora_garden` | REST API |
+| Qdrant collection | `localhost:6333/collections/hortora_garden` | REST API (payloads + dense vectors) |
 | Retrieval tracking | `~/.hortora/stats/retrieval-tracking.db` | SQLite read-only |
-| Garden index | `~/.hortora/garden/garden.db` | SQLite read-only |
+| Garden index | `~/.hortora/garden/garden.db` | SQLite read-only (entries, checked_pairs) |
 | Garden entries | `~/.hortora/garden/` | Filesystem read (frontmatter), JGit write (mutations) |
-| Engine API | `localhost:8080` | REST (reindex trigger, Qdrant stats) |
+| Version registry | `~/.hortora/garden/version-registry.yml` | YAML read/write (stack versions) |
+| Grove analysis cache | `~/.hortora/grove.db` | SQLite read/write (duplicate pairs, analysis results) |
+| Engine API | `localhost:8080` | REST (reindex trigger — requires engine#79) |
 
 ## Build
 
