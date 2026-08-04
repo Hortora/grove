@@ -77,13 +77,46 @@ export class EntryTable extends LitElement {
     .score { font-weight: 600; }
     .score-low { color: #e06c60; }
     .empty { color: #666; padding: 40px; text-align: center; }
+    .checkbox { width: 16px; height: 16px; accent-color: #7cb3f5; cursor: pointer; }
+    th.check-col, td.check-col { width: 32px; text-align: center; }
   `;
 
   @property({ type: Array }) entries: any[] = [];
+  @property({ type: Boolean }) selectable = false;
   @state() private sortCol = 'score';
   @state() private sortAsc = false;
   @state() private filterType = '';
   @state() private filterStale = '';
+  @state() private selected = new Set<string>();
+
+  get selectedEntries(): string[] {
+    return [...this.selected];
+  }
+
+  private toggleSelect(sourceDocId: string) {
+    const next = new Set(this.selected);
+    if (next.has(sourceDocId)) next.delete(sourceDocId); else next.add(sourceDocId);
+    this.selected = next;
+    this.dispatchEvent(new CustomEvent('selection-changed', { detail: { selected: [...next] } }));
+  }
+
+  private toggleAll() {
+    const rows = this.filteredAndSorted;
+    const allSelected = rows.every(e => this.selected.has(e.sourceDocumentId));
+    const next = new Set(this.selected);
+    if (allSelected) {
+      rows.forEach(e => next.delete(e.sourceDocumentId));
+    } else {
+      rows.forEach(e => next.add(e.sourceDocumentId));
+    }
+    this.selected = next;
+    this.dispatchEvent(new CustomEvent('selection-changed', { detail: { selected: [...next] } }));
+  }
+
+  clearSelection() {
+    this.selected = new Set();
+    this.dispatchEvent(new CustomEvent('selection-changed', { detail: { selected: [] } }));
+  }
 
   private get types(): string[] {
     const types = new Set<string>();
@@ -168,6 +201,7 @@ export class EntryTable extends LitElement {
         <table>
           <thead>
             <tr>
+              ${this.selectable ? html`<th class="check-col"><input type="checkbox" class="checkbox" .checked=${rows.every(e => this.selected.has(e.sourceDocumentId)) && rows.length > 0} @change=${() => this.toggleAll()}></th>` : ''}
               <th>GE-ID</th>
               ${this.headerCell('title', 'Title')}
               ${this.headerCell('type', 'Type')}
@@ -179,6 +213,7 @@ export class EntryTable extends LitElement {
           <tbody>
             ${rows.map(e => html`
               <tr>
+                ${this.selectable ? html`<td class="check-col"><input type="checkbox" class="checkbox" .checked=${this.selected.has(e.sourceDocumentId)} @change=${() => this.toggleSelect(e.sourceDocumentId)}></td>` : ''}
                 <td><a class="ge-link" href="#entry/${this.extractGeId(e.sourceDocumentId)}">${this.extractGeId(e.sourceDocumentId)}</a></td>
                 <td>${e.title}</td>
                 <td><span class="badge badge-${e.type ?? 'reference'}">${e.type}</span></td>

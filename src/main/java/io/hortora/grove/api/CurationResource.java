@@ -75,4 +75,64 @@ public class CurationResource {
         }
     }
 
+    @POST
+    @Path("/bulk/confirm")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> bulkConfirm(Map<String, Object> body) {
+        try {
+            @SuppressWarnings("unchecked")
+            var entries = (java.util.List<String>) body.get("entries");
+            if (entries == null || entries.isEmpty()) {
+                throw new IllegalArgumentException("entries list is required");
+            }
+            int count = curationService.bulkConfirmFreshness(entries);
+            return Map.of("status", "ok", "action", "bulk_confirmed", "count", count);
+        } catch (Exception e) {
+            throw new WebApplicationException(e.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @POST
+    @Path("/bulk/retire")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> bulkRetire(Map<String, Object> body) {
+        try {
+            @SuppressWarnings("unchecked")
+            var entries = (java.util.List<String>) body.get("entries");
+            var reason = (String) body.getOrDefault("reason", "No reason given");
+            if (entries == null || entries.isEmpty()) {
+                throw new IllegalArgumentException("entries list is required");
+            }
+            int count = curationService.bulkRetire(entries, reason);
+            return Map.of("status", "ok", "action", "bulk_retired", "count", count);
+        } catch (Exception e) {
+            throw new WebApplicationException(e.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @POST
+    @Path("/bulk/retag")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, Object> bulkRetag(Map<String, Object> body) {
+        try {
+            @SuppressWarnings("unchecked")
+            var entries = (java.util.List<String>) body.get("entries");
+            @SuppressWarnings("unchecked")
+            var addTags = (java.util.List<String>) body.get("addTags");
+            @SuppressWarnings("unchecked")
+            var removeTags = (java.util.List<String>) body.get("removeTags");
+            if (entries == null || entries.isEmpty()) {
+                throw new IllegalArgumentException("entries list is required");
+            }
+            int count = curationService.bulkRetag(entries, addTags, removeTags);
+            return Map.of("status", "ok", "action", "bulk_retagged", "count", count);
+        } catch (Exception e) {
+            throw new WebApplicationException(e.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+
 }

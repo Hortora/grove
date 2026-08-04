@@ -118,6 +118,113 @@ public class CurationService {
         }
     }
 
+    public int bulkConfirmFreshness(java.util.List<String> sourceDocumentIds) throws IOException, GitAPIException {
+        String today = LocalDate.now().toString();
+        int    count = 0;
+        try (Git git = Git.open(gardenPath.toFile())) {
+            for (String sourceDocumentId : sourceDocumentIds) {
+                Path filePath = validatePath(sourceDocumentId);
+                if (!Files.exists(filePath)) {continue;}
+
+                String content = Files.readString(filePath);
+                String updated;
+                if (content.contains("last_reviewed:")) {
+                    updated = content.replaceFirst("last_reviewed:.*", "last_reviewed: " + today);
+                } else {
+                    int endOfFrontmatter = content.indexOf("\n---", 3);
+                    if (endOfFrontmatter > 0) {
+                        updated = content.substring(0, endOfFrontmatter) + "\nlast_reviewed: " + today + content.substring(endOfFrontmatter);
+                    } else {
+                        continue;
+                    }
+                }
+                Files.writeString(filePath, updated);
+                git.add().addFilepattern(sourceDocumentId).call();
+                count++;
+            }
+            if (count > 0) {
+                git.commit().setMessage("grove: bulk confirm " + count + " entries").call();
+            }
+        }
+        return count;
+    }
+
+    public int bulkRetire(java.util.List<String> sourceDocumentIds, String reason) throws IOException, GitAPIException {
+        String today  = LocalDate.now().toString();
+        String marker = "**Deprecated:** " + reason + " — " + today;
+        int    count  = 0;
+        try (Git git = Git.open(gardenPath.toFile())) {
+            for (String sourceDocumentId : sourceDocumentIds) {
+                Path filePath = validatePath(sourceDocumentId);
+                if (!Files.exists(filePath)) {continue;}
+
+                String content          = Files.readString(filePath);
+                int    endOfFrontmatter = content.indexOf("\n---", 3);
+                if (endOfFrontmatter > 0) {
+                    int    bodyStart = endOfFrontmatter + 4;
+                    String updated   = content.substring(0, bodyStart) + "\n\n" + marker + "\n" + content.substring(bodyStart);
+                    Files.writeString(filePath, updated);
+                } else {
+                    Files.writeString(filePath, marker + "\n\n" + content);
+                }
+                git.add().addFilepattern(sourceDocumentId).call();
+                count++;
+            }
+            if (count > 0) {
+                git.commit().setMessage("grove: bulk retire " + count + " entries — " + reason).call();
+            }
+        }
+        return count;
+    }
+
+    public int bulkRetag(java.util.List<String> sourceDocumentIds, java.util.List<String> addTags, java.util.List<String> removeTags) throws IOException, GitAPIException {
+        int count = 0;
+        try (Git git = Git.open(gardenPath.toFile())) {
+            for (String sourceDocumentId : sourceDocumentIds) {
+                Path filePath = validatePath(sourceDocumentId);
+                if (!Files.exists(filePath)) {continue;}
+
+                String content          = Files.readString(filePath);
+                int    endOfFrontmatter = content.indexOf("\n---", 3);
+                if (endOfFrontmatter <= 0) {continue;}
+
+                String frontmatter = content.substring(0, endOfFrontmatter);
+                String rest        = content.substring(endOfFrontmatter);
+
+                java.util.Set<String> tags       = new java.util.LinkedHashSet<>();
+                var                   tagMatcher = java.util.regex.Pattern.compile("tags:\\s*\\[([^\\]]*)]").matcher(frontmatter);
+                if (tagMatcher.find()) {
+                    for (String t : tagMatcher.group(1).split(",")) {
+                        String trimmed = t.trim().replaceAll("^\"|\"$", "").replaceAll("^'|'$", "");
+                        if (!trimmed.isEmpty()) {tags.add(trimmed);}
+                    }
+                }
+
+                if (removeTags != null) {tags.removeAll(removeTags);}
+                if (addTags != null) {tags.addAll(addTags);}
+
+                String tagLine = "tags: [" + String.join(", ", tags) + "]";
+                String updatedFrontmatter;
+                if (tagMatcher.find(0)) {
+                    updatedFrontmatter = tagMatcher.replaceFirst(tagLine);
+                } else {
+                    updatedFrontmatter = frontmatter + "\n" + tagLine;
+                }
+
+                Files.writeString(filePath, updatedFrontmatter + rest);
+                git.add().addFilepattern(sourceDocumentId).call();
+                count++;
+            }
+            if (count > 0) {
+                String desc = "";
+                if (addTags != null && !addTags.isEmpty()) {desc += "+" + String.join(",", addTags);}
+                if (removeTags != null && !removeTags.isEmpty()) {desc += " -" + String.join(",", removeTags);}
+                git.commit().setMessage("grove: bulk retag " + count + " entries " + desc.trim()).call();
+            }
+        }
+        return count;
+    }
+
 
     private Path validatePath(String sourceDocumentId) throws IOException {
         Path resolved = gardenPath.resolve(sourceDocumentId).normalize();
