@@ -57,4 +57,22 @@ public class CurationResource {
             throw new WebApplicationException(e.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @POST
+    @Path("/move/{sourceDocId:.+}")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Map<String, String> moveDomain(@PathParam("sourceDocId") String sourceDocId, Map<String, String> body) {
+        try {
+            String targetDomain = body != null ? body.get("targetDomain") : null;
+            if (targetDomain == null || targetDomain.isBlank()) {
+                throw new IllegalArgumentException("targetDomain is required");
+            }
+            curationService.moveDomain(sourceDocId, targetDomain.trim());
+            return Map.of("status", "ok", "action", "moved", "entry", sourceDocId, "targetDomain", targetDomain.trim());
+        } catch (Exception e) {
+            throw new WebApplicationException(e.getMessage(), Response.Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 }

@@ -122,6 +122,19 @@ export class EntryDetail extends LitElement {
     button.retire:hover { background: rgba(224,108,96,0.15); }
     button.edit { border-color: #7cb3f5; color: #7cb3f5; }
     button.edit:hover { background: rgba(124,179,245,0.15); }
+    button.move { border-color: #d4a843; color: #d4a843; }
+    button.move:hover { background: rgba(212,168,67,0.15); }
+    select.domain-picker {
+      width: 100%;
+      background: #2a2a2a;
+      color: #ccc;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 8px;
+      font-size: 13px;
+      margin-bottom: 8px;
+      box-sizing: border-box;
+    }
     button.save { border-color: #6abf69; color: #6abf69; }
     button.cancel { border-color: #888; color: #888; }
     textarea {
@@ -176,6 +189,9 @@ export class EntryDetail extends LitElement {
   @state() private retireReason = '';
   @state() private toast = '';
   @state() private toastType = 'success';
+  @state() private showMovePicker = false;
+  @state() private domains: string[] = [];
+  @state() private selectedDomain = '';
 
   updated(changed: Map<string, unknown>) {
     if (changed.has('geId') && this.geId) {
@@ -249,6 +265,35 @@ export class EntryDetail extends LitElement {
     }
   }
 
+  private async startMove() {
+    if (this.domains.length === 0) {
+      const res = await fetch('/api/domains');
+      if (res.ok) {
+        const data = await res.json();
+        this.domains = data.map((d: any) => d.domain).filter((d: string) => d !== this.entry.domain);
+      }
+    }
+    this.showMovePicker = true;
+    this.selectedDomain = '';
+  }
+
+  private async submitMove() {
+    if (!this.selectedDomain) return;
+    try {
+      const res = await fetch(`/api/curation/move/${this.entry.sourceDocumentId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetDomain: this.selectedDomain }),
+      });
+      if (!res.ok) throw new Error('Failed');
+      this.showToast(`Moved to ${this.selectedDomain}`, 'success');
+      this.showMovePicker = false;
+      this.loadEntry();
+    } catch (e) {
+      this.showToast(`Error: ${e}`, 'error');
+    }
+  }
+
   private showToast(msg: string, type: string) {
     this.toast = msg;
     this.toastType = type;
@@ -301,6 +346,16 @@ export class EntryDetail extends LitElement {
                 <button class="retire" @click=${() => this.showRetireInput = true}>Retire</button>
               `}
               <button class="edit" @click=${this.startEdit}>Edit</button>
+              ${this.showMovePicker ? html`
+                <select class="domain-picker" @change=${(ev: Event) => this.selectedDomain = (ev.target as HTMLSelectElement).value}>
+                  <option value="">Select domain...</option>
+                  ${this.domains.map(d => html`<option value=${d}>${d}</option>`)}
+                </select>
+                <button class="move" @click=${this.submitMove}>Confirm Move</button>
+                <button class="cancel" @click=${() => this.showMovePicker = false}>Cancel</button>
+              ` : html`
+                <button class="move" @click=${this.startMove}>Move Domain</button>
+              `}
             </div>
           </div>
           <div class="sidebar-section">

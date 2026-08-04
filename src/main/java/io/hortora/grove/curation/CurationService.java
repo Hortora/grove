@@ -1,16 +1,15 @@
 package io.hortora.grove.curation;
 
+import io.hortora.grove.config.GroveConfig;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
-
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.api.errors.GitAPIException;
-
-import io.hortora.grove.config.GroveConfig;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class CurationService {
@@ -87,6 +86,38 @@ public class CurationService {
         String geId = extractGeId(sourceDocumentId);
         commitChange(sourceDocumentId, "grove: edit " + geId);
     }
+
+    public void moveDomain(String sourceDocumentId, String targetDomain) throws IOException, GitAPIException {
+        Path sourcePath = validatePath(sourceDocumentId);
+        if (!Files.exists(sourcePath)) {
+            throw new IOException("Garden entry not found: " + sourceDocumentId);
+        }
+
+        String fileName  = sourcePath.getFileName().toString();
+        Path   targetDir = gardenPath.resolve(targetDomain).normalize();
+        if (!targetDir.startsWith(gardenPath)) {
+            throw new IOException("Path traversal rejected: " + targetDomain);
+        }
+
+        Files.createDirectories(targetDir);
+        Path targetPath = targetDir.resolve(fileName);
+        if (Files.exists(targetPath)) {
+            throw new IOException("Entry already exists in target domain: " + targetDomain + "/" + fileName);
+        }
+
+        Files.move(sourcePath, targetPath);
+
+        String sourceDomain   = sourcePath.getParent().getFileName().toString();
+        String geId           = extractGeId(sourceDocumentId);
+        String targetRelative = targetDomain + "/" + fileName;
+
+        try (Git git = Git.open(gardenPath.toFile())) {
+            git.rm().addFilepattern(sourceDocumentId).call();
+            git.add().addFilepattern(targetRelative).call();
+            git.commit().setMessage("grove: move " + geId + " from " + sourceDomain + " to " + targetDomain).call();
+        }
+    }
+
 
     private Path validatePath(String sourceDocumentId) throws IOException {
         Path resolved = gardenPath.resolve(sourceDocumentId).normalize();
